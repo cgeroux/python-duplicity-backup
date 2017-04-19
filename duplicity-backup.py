@@ -9,8 +9,6 @@ import sys
 
 secondsPerDay=60.0*60.0*24.0
 
-#TODO: should remove logs after some pre-configured age
-
 class backupData:
   
   def __init__(self,**kwargs):
