@@ -118,7 +118,7 @@ def main():
   backupInfo=backupData(
     logFileDirectory="/home/ubuntu/backup-logs"#place to store log files
     ,fromDirectory="/home/ubuntu/to-backup"#path to backup
-    ,toDirectory="sftp://cgeroux@glooscap.ace-net.ca//home/cgeroux/test-backup"#path to place backup in
+    ,toDirectory=""#path to place backup in (can be local directory (file://) or some remote (sftp://) etc.)
     ,daysBeforeFullBackups=0.000694#Number of days before preforming a full backup (0.000694, every 60 seconds)
     ,nBackupsToKeep=1#Number of full backups to keep
     ,daysBeforeLogsRemoved=0.002083#3 minutes
