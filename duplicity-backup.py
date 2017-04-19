@@ -118,7 +118,7 @@ def main():
   backupInfo=backupData(
     logFileDirectory="/home/ubuntu/backup-logs"#place to store log files
     ,fromDirectory="/home/ubuntu/to-backup"#path to backup
-    ,toDirectory="/home/ubuntu/test-backup"#path to place backup in
+    ,toDirectory="sftp://cgeroux@glooscap.ace-net.ca//home/cgeroux/test-backup"#path to place backup in
     ,daysBeforeFullBackups=0.000694#Number of days before preforming a full backup (0.000694, every 60 seconds)
     ,nBackupsToKeep=1#Number of full backups to keep
     ,daysBeforeLogsRemoved=0.002083#3 minutes
@@ -221,7 +221,7 @@ def restore(backupInfo,pathToRestore,time,pathToRestoreTo):
   else :
     pathToRestoreTo=backupInfo.fromDirectory
     
-  cmd.append("file://"+backupInfo.toDirectory)
+  cmd.append(backupInfo.toDirectory)
   cmd.append(pathToRestoreTo)
   
   if not runCommand(cmd,backupInfo.dryRun,sys.stdout):
@@ -296,7 +296,7 @@ def fullBackup(backupInfo):
       cmd.append("--exclude")
       cmd.append(path)
   cmd.append(backupInfo.fromDirectory)
-  cmd.append("file://"+backupInfo.toDirectory)
+  cmd.append(backupInfo.toDirectory)
   
   f=open(logFileWithPath,'a')
   if not backupInfo.dryRun:
@@ -328,7 +328,7 @@ def incrementalBackup(backupInfo):
       cmd.append("--exclude")
       cmd.append(path)
   cmd.append(backupInfo.fromDirectory)
-  cmd.append("file://"+backupInfo.toDirectory)
+  cmd.append(backupInfo.toDirectory)
   
   f=open(logFileName,'a')
   if not backupInfo.dryRun:
@@ -349,7 +349,7 @@ def removeOldBackups(backupInfo):
   #get most recent log file name
   logFileName=getLastLogFileName(backupInfo)
   
-  cmd.append("file://"+backupInfo.toDirectory)
+  cmd.append(backupInfo.toDirectory)
   
   f=open(logFileName,'a')
   if not backupInfo.dryRun:
@@ -370,7 +370,7 @@ def cleanUp(backupInfo):
   #get most recent log file name
   logFileName=getLastLogFileName(backupInfo)
   
-  cmd.append("file://"+backupInfo.toDirectory)
+  cmd.append(backupInfo.toDirectory)
   
   f=open(logFileName,'a')
   if not backupInfo.dryRun:
