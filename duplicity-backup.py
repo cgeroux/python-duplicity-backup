@@ -4,13 +4,19 @@ import optparse as op
 import os
 import glob
 import datetime
+import subprocess as sp
+import sys
+
+secondsPerDay=60.0*60.0*24.0
+
+#TODO: should remove logs after some pre-configured age
 
 class backupData:
   
   def __init__(self,**kwargs):
     
     #set default values
-    self.nDaysBeforeFullBackups=2
+    self.daysBeforeFullBackups=2
     self.nBackupsToKeep=2
     self.pathsToExclude=None
     self.pathsToInclude=None
@@ -26,74 +32,50 @@ class backupData:
         if logFileDirectoryTemp[len(logFileDirectoryTemp)-1] !='/':
           logFileDirectoryTemp=logFileDirectoryTemp+'/'
         self.logFileDirectory=logFileDirectoryTemp
-      
-      #set directory to backup
-      if key=="fromDirectory":
-        self.fromDirectory=kwargs[key]
+      else:
         
-      #set directory to hold backup
-      if key=="toDirectory":
-        self.toDirectory=kwargs[key]
+        #other variables just add
+        self.__dict__[key]=kwargs[key]
       
-      #set number of days before full backup
-      if key=="nDaysBeforeFull":
-        self.nDaysBeforeFullBackups=kwargs[key]
-      
-      #set number of full backups to keep
-      if key=="nFullToKeep":
-        self.nBackupsToKeep=kwargs[key]
-      
-      #set list of paths to exclude from backup
-      if key=="lExcludePaths":
-        self.pathsToExclude=kwargs[key]
-      
-      #set list of paths to include in backup
-      if key=="lIncludePaths":
-        self.pathsToInclude=kwargs[key]
+      '''
+        #set directory to backup
+        if key=="fromDirectory":
+          self.fromDirectory=kwargs[key]
+          
+        #set directory to hold backup
+        if key=="toDirectory":
+          self.toDirectory=kwargs[key]
         
-      #set path to put mysql dump in
-      if key=="lIncludePaths":
-        self.mySQLDumpPath=kwargs[key]
-      
-      if key=="mySQLUser":
-        self.mySQLUser=kwargs[key]
-      
-      if key=="mySQLPass":
-        self.mySQLPass=kwargs[key]
+        #set number of days before full backup
+        if key=="daysBeforeFullBackups":
+          self.daysBeforeFullBackups=kwargs[key]
+        
+        #set number of full backups to keep
+        if key=="nBackupsToKeep":
+          self.nBackupsToKeep=kwargs[key]
+        
+        #set list of paths to exclude from backup
+        if key=="pathsToExclude":
+          self.pathsToExclude=kwargs[key]
+        
+        #set list of paths to include in backup
+        if key=="pathsToInclude":
+          self.pathsToInclude=kwargs[key]
+          
+        #set path to put mysql dump in
+        if key=="mySQLDumpPath":
+          self.mySQLDumpPath=kwargs[key]
+        
+        if key=="mySQLUser":
+          self.mySQLUser=kwargs[key]
+        
+        if key=="mySQLPass":
+          self.mySQLPass=kwargs[key]'''
   def setDryRun(self):
     self.dryRun=True
   def setRestorePath(self,sRestorePath):
     self.fromDirectory=sRestorePath
-def main():
-  
-  #set backup persistent options
-  
-  backupInfo=backupData(
-    logFileDirectory="/home/cgeroux/Documents/backup"#place to store log files
-    ,fromDirectory="/home/"#path to backup
-    #,fromDirectory="/home/cgeroux/Documents/HOME/minecraft_server/world1" #path to backup
-    ,toDirectory="/home/common/SHARE/VIDEO/.backup"#path to place backup in
-    ,nDaysBeforeFull=30#Number of days before preforming a full backup
-    ,nFullToKeep=2#Number of full backups to keep
-    ,lExcludePaths=["/home/common/SHARE/MUSIC","/home/common/SHARE/SOFTWARE"
-      ,"/home/common/SHARE/VIDEO"]#list of paths to exclude from backup
-    ,lIncludePaths=[]# a list of paths to include in backup under fromDirectory
-    ,mySQLDumpPath="/home/common/"
-    ,mySQLUser="root"
-    ,mySQLPass="password")
-  
-  '''
-  #test backup settings
-  backupInfo=backupData(
-    logFileDirectory="/home/cgeroux/Documents/backup/test"#place to store log files
-    ,fromDirectory="/home/cgeroux/Documents/backup/test"#path to backup
-    ,toDirectory="/home/cgeroux/Documents/backup/test_archive"#path to place backup in
-    ,nDaysBeforeFull=1#Number of days before preforming a full backup
-    ,nFullToKeep=1#Number of full backups to keep
-    ,lExcludePaths=[]#list of paths to exclude from backup
-    ,lPathsToInclude=[]
-    )#list of paths to include in backup
-  '''
+def getParser():
   
   #create parser for command line options and arguments
   parser=op.OptionParser(usage="%prog [options] [path to restore to]", version="%prog 0.0"
@@ -124,13 +106,32 @@ def main():
     "is set the entire backup will be restored. This path is RELATIVE TO THE ROOT DIRECTORY OF "+
     "THE INITIAL BACKUP. This can be either a directory or a file.")
     
-  restore_group.add_option("-t","--time",type="int",dest="timeToRestoreFrom",default=0
-    ,help="This option sets the time at which to restore the file from in days from the current "+
-    "day.")
+  restore_group.add_option("-t","--time",type="string",dest="timeToRestoreFrom",default="now"
+    ,help="This option sets the time at which to restore the file from. This is"
+    +" the same as the duplicity time string, see 'man duplicity' for details. "
+    +"[default: %default]")
   
   parser.add_option_group(restore_group)
   
+  return parser
+def main():
+  
+  #set backup persistent options
+  backupInfo=backupData(
+    logFileDirectory="/home/ubuntu/backup-logs"#place to store log files
+    ,fromDirectory="/home/ubuntu/to-backup"#path to backup
+    ,toDirectory="/home/ubuntu/test-backup"#path to place backup in
+    ,daysBeforeFullBackups=0.000694#Number of days before preforming a full backup (0.000694, every 60 seconds)
+    ,nBackupsToKeep=1#Number of full backups to keep
+    ,daysBeforeLogsRemoved=0.002083#3 minutes
+    ,pathsToExclude=[]#list of paths to exclude from backup under fromDirectory
+    ,pathsToInclude=[]# a list of paths to include in backup under fromDirectory
+    ,mySQLDumpPath=""
+    ,mySQLUser=""
+    ,mySQLPass="")
+  
   #parse arguments and options
+  parser=getParser()
   (options,args)=parser.parse_args()
   
   if options.dryRun:
@@ -150,12 +151,26 @@ def main():
         if len(args[0])>0 :
           pathToRestoreTo=args[0]
       
-    restore(backupInfo,options.pathToRestore,options.timeToRestoreFrom,pathToRestoreTo)
-    
+    restore(backupInfo,options.pathToRestore,options.timeToRestoreFrom
+      ,pathToRestoreTo)
   else:
     
     #do backup
     backup(backupInfo)
+def removeOldLogs(backupInfo):
+  logFiles=glob.glob(backupInfo.logFileDirectory+"*.log")
+  now=datetime.datetime.now()
+  for logFile in logFiles:
+    dateLogFile=logFile.rpartition('/')#remove path
+    dateLogFile=dateLogFile[2].rstrip('.log')#remove extension
+    fileDate=dateLogFile.split("-")#break up into year/month/day/hour/min/second
+    logFileDateTime=datetime.datetime(int(fileDate[0]),int(fileDate[1])
+      ,int(fileDate[2]),int(fileDate[3]),int(fileDate[4]),int(fileDate[5]))
+    
+    delta=now-logFileDateTime
+    if delta.total_seconds()/secondsPerDay>backupInfo.daysBeforeLogsRemoved:
+      #remove log
+      os.remove(logFile)
 def backup(backupInfo):
   
   #dump mysql databases if path setDryRun
@@ -171,104 +186,130 @@ def backup(backupInfo):
   else:
     
     #if date of last log file is older than specified number of days do full backup
-    if daysSinceLastLogFile>=backupInfo.nDaysBeforeFullBackups:
+    if daysSinceLastLogFile>=backupInfo.daysBeforeFullBackups:
       fullBackup(backupInfo) #do full backup
     
     #if date of last log file is < younger than specified number of days do incremental backup
-    if daysSinceLastLogFile<backupInfo.nDaysBeforeFullBackups:
+    if daysSinceLastLogFile<backupInfo.daysBeforeFullBackups:
       incrementalBackup(backupInfo) #do incremental backup
+  
+  #remove old log files
+  removeOldLogs(backupInfo)
+def runCommand(cmd,dryRun,stream):
+  if dryRun:
+    print cmd
+  else:
+    #run the command
+    process=sp.Popen(cmd,stdout=sp.PIPE,stderr=sp.PIPE)
+    stdout,stderr=process.communicate()
+    stream.write(stdout)
+    stream.write(stderr)
+    
+    #if there was an error
+    returnCode=process.returncode
+    if returnCode!=0:
+      return False
+    return True
 def restore(backupInfo,pathToRestore,time,pathToRestoreTo):
   
-  cmd="duplicity --no-encryption "
+  cmd=["duplicity","--no-encryption"]
   if pathToRestore!=None:
-    cmd=cmd+"--file-to-restore "+pathToRestore
-  if time>0:
-    cmd=cmd+" -t "+str(time)+"D"
+    cmd.append("--file-to-restore")
+    cmd.append(pathToRestore)
+  cmd.append("-t")
+  cmd.append(time)
   if pathToRestoreTo!=None:
     pathToRestoreTo=pathToRestoreTo
   else :
     pathToRestoreTo=backupInfo.fromDirectory
     
-  cmd=cmd+" "+" file://"+backupInfo.toDirectory+" "+pathToRestoreTo
-  if backupInfo.dryRun:
-    print cmd
-  else:
-    success=os.system(cmd)
-    if success!=0:
-      msg=str(__name__)+":"+str(restore.__name__)+": error restoring backup!"
-      print msg
-      return False
+  cmd.append("file://"+backupInfo.toDirectory)
+  cmd.append(pathToRestoreTo)
+  
+  if not runCommand(cmd,backupInfo.dryRun,sys.stdout):
+    msg=str(__name__)+":"+str(restore.__name__)+": error restoring backup!"
+    print msg
+    return False
+  
   return True
 def getDaysSinceLastLogFile(backupInfo):
+  """Returns days since last log file
+  
+  It includes fractional part of days as a decimal and is accurate to the second.
+  """
   
   #get most recent log file date
   logFiles=glob.glob(backupInfo.logFileDirectory+"*.log")
-  logFileDate=datetime.date.min
+  logFileDateTime=datetime.datetime.min
   if len(logFiles)==0:
     return None
   for logFile in logFiles:
     dateLogFile=logFile.rpartition('/')#remove path
     dateLogFile=dateLogFile[2].rstrip('.log')#remove extension
-    fileDate=dateLogFile.split("-")#break up into year/month/day
-    logFileDateTemp=datetime.date(int(fileDate[0]),int(fileDate[1]),int(fileDate[2]))
-    if logFileDateTemp>logFileDate:
-      logFileDate=logFileDateTemp
+    fileDate=dateLogFile.split("-")#break up into year/month/day/hour/min/second
+    logFileDateTimeTemp=datetime.datetime(int(fileDate[0]),int(fileDate[1])
+      ,int(fileDate[2]),int(fileDate[3]),int(fileDate[4]),int(fileDate[5]))
+    if logFileDateTimeTemp>logFileDateTime:
+      logFileDateTime=logFileDateTimeTemp
   
   #take difference with today's date
-  todaysDate=datetime.date.today()
-  timeSinceLastLogFile=(todaysDate-logFileDate)
-  return timeSinceLastLogFile.days
+  todaysDateTime=datetime.datetime.now()
+  timeSinceLastLogFile=(todaysDateTime-logFileDateTime)
+  return timeSinceLastLogFile.total_seconds()/secondsPerDay
 def getLastLogFileName(backupInfo):
   
   #get most recent log file date
   logFiles=glob.glob(backupInfo.logFileDirectory+"*.log")
-  logFileDate=datetime.date.min
+  logFileDateTime=datetime.datetime.min
   if len(logFiles)==0:
     return None
   for logFile in logFiles:
     dateLogFile=logFile.rpartition('/')#remove path
     dateLogFile=dateLogFile[2].rstrip('.log')#remove extension
-    fileDate=dateLogFile.split("-")#break up into year/month/day
-    logFileDateTemp=datetime.date(int(fileDate[0]),int(fileDate[1]),int(fileDate[2]))
-    if logFileDateTemp>logFileDate:
-      logFileDate=logFileDateTemp
+    fileDate=dateLogFile.split("-")#break up into year/month/day/hour/min/second
+    logFileDateTimeTemp=datetime.datetime(int(fileDate[0]),int(fileDate[1])
+      ,int(fileDate[2]),int(fileDate[3]),int(fileDate[4]),int(fileDate[5]))
+    if logFileDateTimeTemp>logFileDateTime:
+      logFileDateTime=logFileDateTimeTemp
   
-  return backupInfo.logFileDirectory+str(logFileDate)+".log"
+  logFileName=str(logFileDateTime.date())+"-"+str(logFileDateTime.hour)+"-" \
+    +str(logFileDateTime.minute)+"-"+str(logFileDateTime.second)+".log"
+  
+  return os.path.join(backupInfo.logFileDirectory,logFileName)
 def fullBackup(backupInfo):
   #does a full backup
   
   #get today's date
-  todaysDate=datetime.date.today()
+  todaysDateTime=datetime.datetime.now()
   
   #make log file name with full path
-  logFileName=str(todaysDate)+".log"
+  logFileName=str(todaysDateTime.date())+"-"+str(todaysDateTime.hour)+"-" \
+    +str(todaysDateTime.minute)+"-"+str(todaysDateTime.second)+".log"
   logFileWithPath=backupInfo.logFileDirectory+logFileName
   
   #create duplicity command
-  cmd="duplicity full --no-encryption  --allow-source-mismatch"
+  cmd=["duplicity","full","--no-encryption","--allow-source-mismatch"]
   if backupInfo.pathsToInclude != None:
     for path in backupInfo.pathsToInclude:
-      cmd=cmd+" --include "+path
+      cmd.append("--include")
+      cmd.apend(path)
   if backupInfo.pathsToExclude != None:
     for path in backupInfo.pathsToExclude:
-      cmd=cmd+" --exclude "+path
-  cmd=cmd+" "+backupInfo.fromDirectory+" file://"+backupInfo.toDirectory+">>"\
-    +logFileWithPath
+      cmd.append("--exclude")
+      cmd.append(path)
+  cmd.append(backupInfo.fromDirectory)
+  cmd.append("file://"+backupInfo.toDirectory)
   
-  if backupInfo.dryRun:
-    print cmd
-  else:
-    f=open(logFileWithPath,'a')
+  f=open(logFileWithPath,'a')
+  if not backupInfo.dryRun:
     f.write("====================FULL BACK UP====================\n")
+  
+  if not runCommand(cmd,backupInfo.dryRun,f):
+    msg=str(__name__)+":"+str(fullBackup.__name__)+": error performing full backup!"
+    f.write(msg)
     f.close()
-    success=os.system(cmd)
-    if success!=0:
-      f=open(logFileWithPath,'a')
-      msg=str(__name__)+":"+str(fullBackup.__name__)+": error performing full backup!"
-      f.write(msg)
-      f.close()
-      return False
-    f.close()
+    return False
+  f.close()
   
   #remove old backups
   removeOldBackups(backupInfo) #remove all backups before y full backups
@@ -279,81 +320,71 @@ def incrementalBackup(backupInfo):
   #get most recent log file name
   logFileName=getLastLogFileName(backupInfo)
   
-  cmd="duplicity incremental --no-encryption --allow-source-mismatch"
+  cmd=["duplicity","incremental","--no-encryption","--allow-source-mismatch"]
   if backupInfo.pathsToInclude != None:
     for path in backupInfo.pathsToInclude:
-      cmd=cmd+" --include "+path
+      cmd.append("--include")
+      cmd.append(path)
   if backupInfo.pathsToExclude != None:
     for path in backupInfo.pathsToExclude:
-      cmd=cmd+" --exclude "+path
+      cmd.append("--exclude")
+      cmd.append(path)
+  cmd.append(backupInfo.fromDirectory)
+  cmd.append("file://"+backupInfo.toDirectory)
   
-  cmd=cmd+" "+backupInfo.fromDirectory+" file://"+backupInfo.toDirectory+">>"+logFileName
-  if backupInfo.dryRun:
-    print cmd
-  else:
-    f=open(logFileName,'a')
+  f=open(logFileName,'a')
+  if not backupInfo.dryRun:
     f.write("\n=================INCREMENTAL BACK UP=================\n")
+  
+  if not runCommand(cmd,backupInfo.dryRun,f):
+    msg=str(__name__)+":"+str(incrementalBackup.__name__)+": error performing incremental backup!\n"
+    f.write(msg)
     f.close()
-    success=os.system(cmd)
-    if success!=0:
-      f=open(logFileName,'a')
-      msg=str(__name__)+":"+str(fullBackup.__name__)+": error performing incremental backup!"
-      f.write(msg)
-      f.close()
-      return False
-    f.close()
+    return False
+  f.close()
+
   return True
 def removeOldBackups(backupInfo):
   
-  cmd="duplicity remove-all-but-n-full "+str(backupInfo.nBackupsToKeep)+" --force --no-encryption"
+  cmd=["duplicity","remove-all-but-n-full",str(backupInfo.nBackupsToKeep),"--force","--no-encryption"]
 
   #get most recent log file name
   logFileName=getLastLogFileName(backupInfo)
   
-  if logFileName !=None:
-    cmd=cmd+" file://"+backupInfo.toDirectory+">>"+logFileName
-  else:
-    cmd=cmd+" file://"+backupInfo.toDirectory
+  cmd.append("file://"+backupInfo.toDirectory)
   
-  if backupInfo.dryRun:
-    print cmd
-  else:
-    f=open(logFileName,'a')
+  f=open(logFileName,'a')
+  if not backupInfo.dryRun:
     f.write("\n=================REMOVE OLD BACK UPS=================\n")
+  
+  if not runCommand(cmd,backupInfo.dryRun,f):
+    msg=str(__name__)+":"+str(fullBackup.__name__)+": error removing old backups!"
+    f.write(msg)
     f.close()
-    success=os.system(cmd)
-    if success!=0:
-      f=open(logFileName,'a')
-      msg=str(__name__)+":"+str(fullBackup.__name__)+": error removing old backups!"
-      f.write(msg)
-      f.close()
-      return False
-    f.close()
+    return False
+  f.close()
+  
   return True
 def cleanUp(backupInfo):
   
-  cmd="duplicity cleanup "+" --extra-clean --force --no-encryption"
+  cmd=["duplicity","cleanup","--extra-clean","--force","--no-encryption"]
 
   #get most recent log file name
   logFileName=getLastLogFileName(backupInfo)
-  if logFileName !=None:
-    cmd=cmd+" file://"+backupInfo.toDirectory+">>"+logFileName
-  else:
-    cmd=cmd+" file://"+backupInfo.toDirectory
-  if backupInfo.dryRun:
-    print cmd
-  else:
-    f=open(logFileName,'a')
+  
+  cmd.append("file://"+backupInfo.toDirectory)
+  
+  f=open(logFileName,'a')
+  if not backupInfo.dryRun:
     f.write("\n=================CLEANUP=================\n")
+  
+  if not runCommand(cmd,backupInfo.dryRun,f):
+    msg=str(__name__)+":"+str(fullBackup.__name__)+": error cleaning up!"
+    f.write(msg)
     f.close()
-    success=os.system(cmd)
-    if success!=0:
-      f=open(logFileName,'a')
-      msg=str(__name__)+":"+str(fullBackup.__name__)+": error cleaning up!"
-      f.write(msg)
-      f.close()
-      return False
-    f.close()
+    return False
+  
+  f.close()
   return True
 def mysqldump(backupInfo):
   os.system("mysqldump -u "+backupInfo.mySQLUser+" -p"+backupInfo.mySQLPass+" --all-databases>"+backupInfo.mySQLDumpPath\
