@@ -290,7 +290,7 @@ def fullBackup(backupInfo):
   if backupInfo.pathsToInclude != None:
     for path in backupInfo.pathsToInclude:
       cmd.append("--include")
-      cmd.apend(path)
+      cmd.append(path)
   if backupInfo.pathsToExclude != None:
     for path in backupInfo.pathsToExclude:
       cmd.append("--exclude")
