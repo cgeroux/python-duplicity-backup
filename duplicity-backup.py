@@ -116,14 +116,14 @@ def main():
   
   #set backup persistent options
   backupInfo=backupData(
-    logFileDirectory="/home/ubuntu/backup-logs"#place to store log files
-    ,fromDirectory="/home/ubuntu/to-backup"#path to backup
-    ,toDirectory=""#path to place backup in (can be local directory (file://) or some remote (sftp://) etc.)
-    ,daysBeforeFullBackups=0.000694#Number of days before preforming a full backup (0.000694, every 60 seconds)
-    ,nBackupsToKeep=1#Number of full backups to keep
-    ,daysBeforeLogsRemoved=0.002083#3 minutes
-    ,pathsToExclude=[]#list of paths to exclude from backup under fromDirectory
-    ,pathsToInclude=[]# a list of paths to include in backup under fromDirectory
+    logFileDirectory="/var/log/python-duplicity-backup-logs"#place to store log files
+    ,fromDirectory="/"#path to backup
+    ,toDirectory="sftp://Acenet@142.12.33.10/diversity_vm_data_backup"#path to place backup in (can be local directory (file://) or some remote (sftp://) etc.)
+    ,daysBeforeFullBackups=90#Number of days before pqreforming a full backup (0.010417, every 15 mins)
+    ,nBackupsToKeep=2#Number of full backups to keep
+    ,daysBeforeLogsRemoved=180#30 mins
+    ,pathsToExclude=["/"]#list of paths to exclude from backup under fromDirectory
+    ,pathsToInclude=["/var/lib/mysqlbackups/mysql","/usr/local/fedora","/var/www","/opt","/etc/apache2","/etc/letsencrypt"]# a list of paths to include in backup under fromDirectory
     ,mySQLDumpPath=""
     ,mySQLUser=""
     ,mySQLPass="")
@@ -336,6 +336,7 @@ def incrementalBackup(backupInfo):
   
   if not runCommand(cmd,backupInfo.dryRun,f):
     msg=str(__name__)+":"+str(incrementalBackup.__name__)+": error performing incremental backup!\n"
+    f.write(str(datetime.datetime.now())+" UTC")
     f.write(msg)
     f.close()
     return False
